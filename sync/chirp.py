@@ -100,10 +100,14 @@ class CursorManager(object):
 
     def _on_response(self, cursor):
         try:
+            start_time = time.time()
             response = list(cursor)
+            logging.info('iterated cursor in %.2f seconds' % (
+                time.time() - start_time)
+            )
         except Exception, error:
             # Ignore errors from dropped collections
-            if error.message != 'cursor not valid at server':
+            if not error.message.endswith('not valid at server'):
                 self.emit('app_error', error.message)
 
             # Something's wrong with this cursor, remove it
@@ -168,6 +172,7 @@ class ClearChirpsHandler(tornado.web.RequestHandler):
         Delete everything in the collection
         """
         sync_db.chirps.drop()
+        chirps.clear()
         create_collection()
         self.settings['cursor_manager'].emit('cleared', {})
 

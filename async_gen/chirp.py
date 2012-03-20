@@ -110,7 +110,7 @@ class CursorManager(object):
             self._remove_dead_cursor()
 
             # Ignore errors from dropped collections
-            if error.message != 'cursor not valid at server':
+            if not error.message.endswith('not valid at server'):
                 self.emit('app_error', error.message)
 
         elif response:
@@ -185,6 +185,7 @@ class ClearChirpsHandler(tornado.web.RequestHandler):
         Delete everything in the collection
         """
         sync_db.chirps.drop()
+        chirps.clear()
         create_collection()
         self.settings['cursor_manager'].emit('cleared', {})
 
