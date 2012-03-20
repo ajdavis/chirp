@@ -10,6 +10,8 @@ from collections import deque
 import tornado.ioloop
 import tornado.web
 import tornado.options
+from tornado import gen
+
 import tornadio2
 import pymongo
 import pymongo.objectid
@@ -151,22 +153,28 @@ class CursorManager(object):
 class NewChirpHandler(tornado.web.RequestHandler):
     # This method will exit before the request is complete, thus "asynchronous"
     @tornado.web.asynchronous
+    # We're going to use Tornado's generator-based interface
+    @gen.engine
     def post(self):
         """
         Insert a new chirp in the capped collection
         """
         msg = self.request.body
-        self.settings['async_db'].chirps.insert(
+        async_db = self.settings['async_db']
+
+        # insert() calls its callback with two parameters, 'result' and
+        # 'error', so gen will return an Arguments object
+        result, error = yield gen.Task(
+            async_db.chirps.insert,
             {
                 'msg': msg,
                 'ts': datetime.datetime.utcnow(),
-            },
-            callback=self._on_response
+            }
         )
 
-    def _on_response(self, response, error):
-        if error:
-            raise error
+        if error and error.get('error'):
+            raise Exception(error['error'])
+
         self.finish()
 
 

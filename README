@@ -1,0 +1,34 @@
+A trivial Twitter clone. A set of example apps demonstrating using Tornado with
+MongoDB.
+
+Installation
+------------
+
+git clone git://github.com/ajdavis/chirp.git
+cd chirp
+pip install -I -r chirp.reqs
+cd ..
+
+git clone git@github.com:ajdavis/asyncmongo.git
+cd asyncmongo
+git checkout getmore # my patch that allows tailable cursors
+cd ..
+
+Usage
+-----
+
+To run `sync`, the example of using PyMongo with Tornado:
+
+cd sync
+python chirp.py
+
+To run `async`, the example of using AsyncMongo with Tornado:
+
+cd async
+python chirp.py
+
+To run `async_gen`, the example of using AsyncMongo with Tornado's generator
+interface:
+
+cd async_gen
+python chirp.py
