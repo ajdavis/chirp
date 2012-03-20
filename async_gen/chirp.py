@@ -21,6 +21,7 @@ import asyncmongo
 # Global state: new chirps on the right, old ones fall off the left
 chirps = deque([], maxlen=20)
 session2handler = {}
+sync_db = None
 
 
 def create_collection():
