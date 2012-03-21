@@ -10,11 +10,10 @@ from collections import deque
 import tornado.ioloop
 import tornado.web
 import tornado.options
-from tornado import gen
-
+import tornado.gen
 import tornadio2
 import pymongo
-import pymongo.objectid
+from bson.objectid import ObjectId
 import asyncmongo
 
 
@@ -33,7 +32,7 @@ def json_default(obj):
     """
     Convert non-JSON-serializable obj to something serializable
     """
-    if isinstance(obj, pymongo.objectid.ObjectId):
+    if isinstance(obj, ObjectId):
         return str(obj)
     elif isinstance(obj, datetime.datetime):
         return str(obj)
@@ -45,11 +44,12 @@ class TailingHandler(tornadio2.SocketConnection):
     @tornadio2.event
     def get_chirps(self):
         """Client starts waiting for new chirps"""
-        logging.debug('get chirps')
+        logging.info('get chirps %s' % self.session.session_id)
         session2handler[self.session.session_id] = self
 
     def on_close(self):
         """Client disconnected"""
+        logging.info('client disconnected %s' % self.session.session_id)
         session2handler.pop(self.session.session_id, None)
 
 
@@ -73,11 +73,11 @@ class CursorManager(object):
             handler.emit(name, value)
 
     def _find(self):
-        if chirps:
+        if len(chirps):
             last_chirp = chirps[-1]
             query = {
-                'ts': {'$gte': last_chirp.get('ts')},
-                '_id': {'$ne': last_chirp.get('_id')}
+                'ts': {'$gte': last_chirp['ts']},
+                '_id': {'$ne': last_chirp['_id']}
             }
         else:
             query = {}
@@ -90,34 +90,31 @@ class CursorManager(object):
             callback=self._on_response
         )
 
-    def _remove_dead_cursor(self):
-        logging.warn('dead cursor')
-        self.cursor = None
-
-        # Wait 1 second before trying again
-        tornado.ioloop.IOLoop.instance().add_timeout(
-            time.time() + 1,
-            self._find
-        )
-
     def _on_response(self, response, error):
         """
         Asynchronous callback when find() or get_more() completes. Sends result
         to the client.
         """
         if error:
-            # Something's wrong with this cursor, remove it
-            self._remove_dead_cursor()
+            # Something's wrong with this cursor, wait 1 second before trying
+            # again
+            self.cursor = None
+            tornado.ioloop.IOLoop.instance().add_timeout(
+                time.time() + 1,
+                self._find
+            )
 
             # Ignore errors from dropped collections
             if not error.message.endswith('not valid at server'):
                 self.emit('app_error', error.message)
 
+            return
+
         elif response:
             chirps.extend(response)
 
             # We have new data for the client.
-            logging.debug('New data: ' + str(response)[:50])
+            logging.debug('New data: ' + str(response)[:150])
 
             self.emit(
                 'chirps',
@@ -130,13 +127,13 @@ class CursorManager(object):
         # Response is empty list if no data came in during the seconds while
         # we waited for more data. get_more() does *not* block indefinitely
         # for more data, it only blocks for a few seconds.
-        if self.cursor:
-            if self.cursor.alive:
-                self._get_more()
-            else:
-                self._remove_dead_cursor()
+        if self.cursor and self.cursor.alive:
+            self._get_more()
         else:
-            self._find()
+            tornado.ioloop.IOLoop.instance().add_timeout(
+                time.time() + 1,
+                self._find
+            )
 
     def _get_more(self):
         # Continue tailing. The await_data=True option we passed in when we
@@ -170,6 +167,7 @@ class NewChirpHandler(tornado.web.RequestHandler):
             {
                 'msg': msg,
                 'ts': datetime.datetime.utcnow(),
+                '_id': ObjectId(),
             }
         )
 

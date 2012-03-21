@@ -10,11 +10,9 @@ from collections import deque
 import tornado.ioloop
 import tornado.web
 import tornado.options
-from tornado import gen
-
 import tornadio2
 import pymongo
-import pymongo.objectid
+from bson.objectid import ObjectId
 
 
 # Global state: new chirps on the right, old ones fall off the left
@@ -32,7 +30,7 @@ def json_default(obj):
     """
     Convert non-JSON-serializable obj to something serializable
     """
-    if isinstance(obj, pymongo.objectid.ObjectId):
+    if isinstance(obj, ObjectId):
         return str(obj)
     elif isinstance(obj, datetime.datetime):
         return str(obj)
@@ -44,11 +42,11 @@ class TailingHandler(tornadio2.SocketConnection):
     @tornadio2.event
     def get_chirps(self):
         """Client starts waiting for new chirps"""
-        logging.debug('get chirps')
+        logging.info('get chirps %s' % self.session.session_id)
         session2handler[self.session.session_id] = self
 
     def on_close(self):
-        """Client disconnected"""
+        logging.info('client disconnected %s' % self.session.session_id)
         session2handler.pop(self.session.session_id, None)
 
 
@@ -72,83 +70,57 @@ class CursorManager(object):
             handler.emit(name, value)
 
     def _find(self):
-        if chirps:
+        if len(chirps):
             last_chirp = chirps[-1]
             query = {
-                'ts': {'$gte': last_chirp.get('ts')},
-                '_id': {'$ne': last_chirp.get('_id')}
+                'ts': {'$gte': last_chirp['ts']},
+                '_id': {'$ne': last_chirp['_id']}
             }
         else:
             query = {}
 
-        self.cursor = self.sync_db.chirps.find(
-            query,
-            tailable=True, await_data=True
-        )
-
-        self._on_response(self.cursor)
-
-    def _remove_dead_cursor(self):
-        logging.warn('dead cursor')
-        self.cursor = None
-
-        # Wait 1 second before trying again
-        tornado.ioloop.IOLoop.instance().add_timeout(
-            time.time() + 1,
-            self._find
-        )
-
-    def _on_response(self, cursor):
+        response, error = None, None
         try:
-            start_time = time.time()
-            response = list(cursor)
-            logging.info('iterated cursor in %.2f seconds' % (
-                time.time() - start_time)
+            response = list(self.sync_db.chirps.find(
+                query,
+                tailable=True, await_data=True
+            ))
+        except Exception, e:
+            error = e
+
+        if error:
+            # Something's wrong with this cursor, wait 1 second before trying
+            # again
+            tornado.ioloop.IOLoop.instance().add_timeout(
+                time.time() + 1,
+                self._find
             )
-        except Exception, error:
+
             # Ignore errors from dropped collections
             if not error.message.endswith('not valid at server'):
                 self.emit('app_error', error.message)
 
-            # Something's wrong with this cursor, remove it
-            self._remove_dead_cursor()
             return
 
-        chirps.extend(response)
+        elif response:
+            chirps.extend(response)
 
-        # We have new data for the client.
-        logging.debug('New data: ' + str(response)[:50])
+            # We have new data for the client.
+            logging.debug('New data: ' + str(response)[:150])
 
-        self.emit(
-            'chirps',
-            json.dumps(
-                {'chirps': response},
-                default=json_default
+            self.emit(
+                'chirps',
+                json.dumps(
+                    {'chirps': response},
+                    default=json_default
+                )
             )
+
+        tornado.ioloop.IOLoop.instance().add_timeout(
+            time.time() + 0.1,
+            self._find
         )
 
-        # Response is empty list if no data came in during the seconds while
-        # we waited for more data. get_more() does *not* block indefinitely
-        # for more data, it only blocks for a few seconds.
-        if self.cursor:
-            if self.cursor.alive:
-                # Schedule get_more to be executed later; if we do it in a
-                # tight loop, Tornado will never have a chance to process
-                # HTTP requests
-                tornado.ioloop.IOLoop.instance().add_timeout(
-                    time.time() + .1,
-                    self._get_more
-                )
-            else:
-                self._remove_dead_cursor()
-        else:
-            self._find()
-
-    def _get_more(self):
-        # Continue tailing. The await_data=True option we passed in when we
-        # created the cursor means that if there's no more data, the cursor
-        # will wait about a second for more data to come in before returning
-        self._on_response(self.cursor)
 
 class NewChirpHandler(tornado.web.RequestHandler):
     def post(self):
@@ -163,6 +135,7 @@ class NewChirpHandler(tornado.web.RequestHandler):
         sync_db.chirps.insert({
             'msg': msg,
             'ts': datetime.datetime.utcnow(),
+            '_id': ObjectId(),
         })
 
 
