@@ -20,15 +20,15 @@ Usage
 To run `sync`, the example of using PyMongo with Tornado:
 
 cd sync
-python chirp.py
+python chirp_sync.py
 
 To run `async`, the example of using AsyncMongo with Tornado:
 
 cd async
-python chirp.py
+python chirp_async.py
 
 To run `async_gen`, the example of using AsyncMongo with Tornado's generator
 interface:
 
 cd async_gen
-python chirp.py
+python chirp_async_gen.py
