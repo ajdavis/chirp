@@ -168,8 +168,6 @@ if __name__ == '__main__':
 
     tornado.options.parse_command_line()
 
-    sync_db = pymongo.Connection().test
-
     cursor_manager = CursorManager(sync_db)
     cursor_manager.start()
 
