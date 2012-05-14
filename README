@@ -1,5 +1,5 @@
-A trivial Twitter clone. A set of example apps demonstrating using Tornado with
-MongoDB.
+A trivial Twitter clone. A set of example apps demonstrating asynchronous
+Python web frameworks with MongoDB.
 
 Installation
 ------------
@@ -14,21 +14,32 @@ cd asyncmongo
 git checkout getmore # my patch that allows tailable cursors
 cd ..
 
+git clone git@github.com:ajdavis/mongo-python-driver.git
+cd mongo-python-driver
+git checkout motor # my branch with Motor, a Tornado Mongo driver
+cd ..
+
+
 Usage
 -----
 
 To run `sync`, the example of using PyMongo with Tornado:
 
 cd sync
-python chirp_sync.py
+PYTHONPATH=../../mongo-python-driver python chirp_sync.py
 
 To run `async`, the example of using AsyncMongo with Tornado:
 
 cd async
-python chirp_async.py
+PYTHONPATH=../../asyncmongo python chirp_async.py
 
 To run `async_gen`, the example of using AsyncMongo with Tornado's generator
 interface:
 
 cd async_gen
-python chirp_async_gen.py
+PYTHONPATH=../../asyncmongo python chirp_async_gen.py
+
+To run `gevent`, the example using PyMongo 2.2 with Gevent:
+
+cd gevent
+PYTHONPATH=../../mongo-python-driver python chirp_gevent.py

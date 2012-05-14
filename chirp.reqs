@@ -1,4 +1,3 @@
-pymongo>=2.2
 tornado>=2.2.0
 tornadio2>=0.0.2
 gevent>=0.13.6
