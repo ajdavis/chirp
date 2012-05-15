@@ -94,7 +94,7 @@ class CursorManager(object):
             query = {}
 
         self.cursor = self.motor_db.chirps.find(query)
-        self.cursor.tail(self._on_response)
+        self.cursor.tail(self._on_response, await_data=True)
 
     def _on_response(self, response, error):
         """
