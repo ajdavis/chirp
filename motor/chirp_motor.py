@@ -153,9 +153,12 @@ class ClearChirpsHandler(tornado.web.RequestHandler):
         """
         Delete everything in the collection
         """
-        yield motor.Op(self.settings['motor_db'].chirps.drop)
+        db = self.settings['motor_db']
+        yield motor.Op(db.chirps.drop)
         chirps.clear()
-        create_collection()
+        yield motor.Op(db.create_collection, 'chirps', size=10000, capped=True)
+        logging.info('Created capped collection "chirps" in database "test"')
+
         self.settings['cursor_manager'].emit('cleared', {})
         self.finish()
 
