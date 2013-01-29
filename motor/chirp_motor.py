@@ -130,23 +130,17 @@ class CursorManager(object):
 class NewChirpHandler(tornado.web.RequestHandler):
     # This method will exit before the request is complete, thus "asynchronous"
     @tornado.web.asynchronous
+    @gen.engine
     def post(self):
         """
         Insert a new chirp in the capped collection
         """
         msg = self.request.body
-        self.settings['motor_db'].chirps.insert(
-            {
-                'msg': msg,
-                'ts': datetime.datetime.utcnow(),
-                '_id': ObjectId(),
-            },
-            callback=self._on_response
-        )
+        yield motor.Op(self.settings['motor_db'].chirps.insert, {
+            'msg': msg,
+            'ts': datetime.datetime.utcnow(),
+            '_id': ObjectId()})
 
-    def _on_response(self, response, error):
-        if error:
-            raise error
         self.finish()
 
 
