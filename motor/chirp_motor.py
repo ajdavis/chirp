@@ -29,9 +29,9 @@ except ImportError:
 # Global state: new chirps on the right, old ones fall off the left
 chirps = deque([], maxlen=20)
 session2handler = {}
-sync_db = None # TODO remove
 
-def create_collection():
+
+def create_collection(sync_db):
     sync_db.create_collection('chirps', size=10000, capped=True)
     logging.info('Created capped collection "chirps" in database "test"')
 
@@ -166,7 +166,7 @@ class ClearChirpsHandler(tornado.web.RequestHandler):
 if __name__ == '__main__':
     sync_db = pymongo.Connection().test
     try:
-        create_collection()
+        create_collection(sync_db)
     except pymongo.errors.CollectionInvalid:
         if 'capped' not in sync_db.chirps.options():
             print >> sys.stderr, (
