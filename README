@@ -7,28 +7,13 @@ Installation
 git clone git://github.com/ajdavis/chirp.git
 cd chirp
 pip install -I -r requirements.txt
-cd ..
 
-Usage
------
+Examples
+--------
 
-To run `sync`, the example of using PyMongo with Tornado:
-
-cd sync
-PYTHONPATH=../../mongo-python-driver python chirp_sync.py
-
-To run `async`, the example of using AsyncMongo with Tornado:
-
-cd async
-PYTHONPATH=../../asyncmongo python chirp_async.py
-
-To run `async_gen`, the example of using AsyncMongo with Tornado's generator
-interface:
-
-cd async_gen
-PYTHONPATH=../../asyncmongo python chirp_async_gen.py
-
-To run `gevent`, the example using PyMongo 2.2 with Gevent:
-
-cd gevent
-PYTHONPATH=../../mongo-python-driver python chirp_gevent.py
+* `sync/chirp_sync.py`: Use [PyMongo](http://pypi.python.org/pypi/pymongo/), the
+  standard blocking driver, with Tornado. See the tragic consequences of mixing
+  a blocking driver with a non-blocking web framework.
+* `motor/chirp_motor.py`: Use [Motor](https://github.com/mongodb/motor), my
+  non-blocking driver for MongoDB and Tornado.
+* `gevent/chirp_gevent.py`: Just for completeness, use PyMongo with Gevent.
