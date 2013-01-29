@@ -88,7 +88,7 @@ class CursorManager(object):
             query = {}
 
         self.cursor = self.motor_db.chirps.find(query)
-        self.cursor.tail(self._on_response, await_data=True)
+        self.cursor.tail(self._on_response)
 
     def _on_response(self, response, error):
         """
@@ -99,6 +99,7 @@ class CursorManager(object):
             # Something's wrong with this cursor, wait 1 second before trying
             # again
             print >> sys.stderr, "error in _on_response"
+            self.cursor.close()
             self.cursor = None
             tornado.ioloop.IOLoop.instance().add_timeout(
                 time.time() + 1,
@@ -178,9 +179,9 @@ if __name__ == '__main__':
 
     tornado.options.parse_command_line()
 
-    motor_connection = motor.MotorConnection()
-    motor_connection.open_sync()
-    motor_db = motor_connection.test
+    motor_client = motor.MotorClient()
+    motor_client.open_sync()
+    motor_db = motor_client.test
 
     cursor_manager = CursorManager(motor_db)
     cursor_manager.start()
