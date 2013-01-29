@@ -6,7 +6,7 @@ Installation
 
 git clone git://github.com/ajdavis/chirp.git
 cd chirp
-pip install -I -r chirp.reqs
+pip install -I -r requirements.txt
 cd ..
 
 git clone git@github.com:ajdavis/asyncmongo.git
