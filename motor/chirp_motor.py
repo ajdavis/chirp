@@ -3,6 +3,7 @@
 import datetime
 import json
 import logging
+import os
 import sys
 import time
 from collections import deque
@@ -186,15 +187,17 @@ if __name__ == '__main__':
 
     router = tornadio2.TornadioRouter(TailingHandler)
 
+    this_dir = os.path.dirname(__file__)
+    static_path = os.path.join(this_dir, 'static')
     application = tornado.web.Application(
         router.apply_routes([
             (r'/chirps', ChirpsHandler),
             (r'/new', NewChirpHandler),
             (r'/clear', ClearChirpsHandler),
-            (r'/()', tornado.web.StaticFileHandler, {'path': 'static/index.html'}),
+            (r'/()', tornado.web.StaticFileHandler, {'path': os.path.join(static_path, 'index.html')}),
         ]),
 
-        static_path='static',
+        static_path=static_path,
         socket_io_port = 8001,
 
         motor_db=motor_db,
