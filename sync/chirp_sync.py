@@ -189,4 +189,5 @@ if __name__ == '__main__':
         debug=tornado.options.options.debug,
     )
 
+    print 'Listening on http://localhost:8001'
     tornadio2.SocketServer(application)
