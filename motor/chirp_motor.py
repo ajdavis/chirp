@@ -98,7 +98,7 @@ class CursorManager(object):
         if error:
             # Something's wrong with this cursor, wait 1 second before trying
             # again
-            print >> sys.stderr, "error in _on_response"
+            print >> sys.stderr, "error in _on_response", error
             self.cursor.close()
             self.cursor = None
             tornado.ioloop.IOLoop.instance().add_timeout(
