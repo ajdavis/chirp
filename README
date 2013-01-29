@@ -9,11 +9,6 @@ cd chirp
 pip install -I -r requirements.txt
 cd ..
 
-git clone git@github.com:ajdavis/asyncmongo.git
-cd asyncmongo
-git checkout getmore # my patch that allows tailable cursors
-cd ..
-
 Usage
 -----
 
