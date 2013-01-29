@@ -145,14 +145,17 @@ class NewChirpHandler(tornado.web.RequestHandler):
 
 
 class ClearChirpsHandler(tornado.web.RequestHandler):
+    @tornado.web.asynchronous
+    @gen.engine
     def post(self):
         """
         Delete everything in the collection
         """
-        sync_db.chirps.drop()
+        yield motor.Op(self.settings['motor_db'].chirps.drop)
         chirps.clear()
         create_collection()
         self.settings['cursor_manager'].emit('cleared', {})
+        self.finish()
 
 
 if __name__ == '__main__':
