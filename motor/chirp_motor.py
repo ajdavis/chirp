@@ -9,22 +9,13 @@ import time
 from collections import deque
 from tornado import gen
 
+import motor
 import tornado.ioloop
 import tornado.web
 import tornado.options
 import tornadio2
 import pymongo
 from bson.objectid import ObjectId
-
-try:
-    import motor
-except ImportError:
-    print >> sys.stderr, (
-        "Can't import motor.\n\n"
-        " Get it from https://github.com/mongodb/motor.")
-
-    raise
-
 
 # Global state: new chirps on the right, old ones fall off the left
 chirps = deque([], maxlen=20)
